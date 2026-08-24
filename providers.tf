@@ -1,5 +1,7 @@
 terraform {
-  required_version = ">= 1.9.0"
+  # >= 1.11: o backend S3 usa use_lockfile (locking nativo, sem DynamoDB),
+  # argumento que só existe a partir do 1.10 e estabilizou no 1.11.
+  required_version = ">= 1.11.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"

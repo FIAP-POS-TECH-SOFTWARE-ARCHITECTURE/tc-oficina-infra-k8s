@@ -14,7 +14,7 @@ A separação em um repositório próprio atende à exigência do enunciado de m
 
 | Item | Versão |
 | --- | --- |
-| Terraform | ≥ 1.9.0 (CI fixa 1.9.8) |
+| Terraform | ≥ 1.11.0 (CI fixa 1.15.9) |
 | Provider `hashicorp/aws` | ~> 5.0 |
 | Provider `hashicorp/kubernetes` | ~> 2.33 |
 | Provider `hashicorp/helm` | ~> 2.16 |
@@ -167,7 +167,7 @@ Deploy manual de contingência: rodar `terraform init && terraform apply` localm
 | Nodes em **subnets públicas** com IP público | o Learner Lab não comporta o custo de NAT Gateway | subnets privadas + NAT Gateway, apenas o LoadBalancer exposto |
 | **`LabRole`** como role do cluster e dos nodes | a conta Academy não permite criar IAM roles | roles dedicadas por função, com permissão mínima |
 | **Um cluster, dois namespaces** para homolog e prod | limite de recursos e custo do lab | clusters separados, idealmente em contas AWS distintas |
-| Estado remoto em S3 com `use_lockfile` | sem tabela DynamoDB (locking nativo do S3, Terraform ≥ 1.9) | S3 + locking nativo é hoje a recomendação da HashiCorp |
+| Estado remoto em S3 com `use_lockfile` | sem tabela DynamoDB (locking nativo do S3, exige Terraform ≥ 1.10) | S3 + locking nativo é hoje a recomendação da HashiCorp |
 | Chart `nri-bundle` sem versão fixa | recomendação da New Relic para o bundle | pinar versão e promover por ambiente |
 
 ## Links
