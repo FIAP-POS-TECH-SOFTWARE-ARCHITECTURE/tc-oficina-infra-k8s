@@ -1,0 +1,4 @@
+# copiar para terraform.tfvars (NÃO commitado) e preencher.
+# new_relic_license_key: preferir TF_VAR_new_relic_license_key no ambiente.
+project_name      = "oficina"
+eks_instance_type = "t3.medium"
