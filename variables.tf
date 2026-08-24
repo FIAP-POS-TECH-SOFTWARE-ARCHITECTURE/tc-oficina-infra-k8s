@@ -30,3 +30,9 @@ variable "eks_max_size" {
   type    = number
   default = 4
 }
+
+# Mesma lista usada pelo tc-oficina-infra-db (bancos lógicos) — manter em sincronia.
+variable "environments" {
+  type    = list(string)
+  default = ["homolog", "prod"]
+}
