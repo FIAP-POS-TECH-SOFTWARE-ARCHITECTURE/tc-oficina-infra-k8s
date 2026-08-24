@@ -36,3 +36,13 @@ variable "environments" {
   type    = list(string)
   default = ["homolog", "prod"]
 }
+
+# Vem de TF_VAR_new_relic_license_key (secret NEW_RELIC_LICENSE_KEY).
+# Vazio desliga o bundle New Relic, permitindo aplicar o cluster antes de a
+# conta existir (spec 06 Task 1) sem precisar comentar código.
+variable "new_relic_license_key" {
+  description = "License key do New Relic; vazio pula a instalação do nri-bundle"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
