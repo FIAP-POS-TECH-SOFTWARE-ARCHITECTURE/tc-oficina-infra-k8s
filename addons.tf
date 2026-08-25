@@ -10,7 +10,7 @@ resource "helm_release" "metrics_server" {
 }
 
 # Bundle New Relic: métricas de cluster (CPU/memória), eventos e envio de
-# logs dos pods (Fluent Bit) — base dos dashboards do spec 06.
+# logs dos pods (Fluent Bit) — origem dos dados dos dashboards de observabilidade.
 # Sem license key o recurso não é criado (ver variables.tf); a versão do chart
 # fica flutuante por recomendação da New Relic para o nri-bundle.
 resource "helm_release" "newrelic" {
