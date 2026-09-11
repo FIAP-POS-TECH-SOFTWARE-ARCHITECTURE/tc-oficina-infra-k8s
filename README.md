@@ -177,7 +177,7 @@ Deploy manual de contingência: rodar `terraform init && terraform apply` localm
   - [`tc-oficina-lambda-auth`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-lambda-auth) — autenticação de cliente por CPF
   - [`tc-oficina-infra-k8s`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-k8s) — este repositório
   - [`tc-oficina-infra-db`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-db) — banco gerenciado
-- Documentação arquitetural: `docs/arquitetura/` no `tc-oficina-app`
+- Documentação arquitetural: [`docs/arquitetura/`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/tree/main/docs/arquitetura) no `tc-oficina-app` (componentes, sequências, RFCs, ADRs, DER). A topologia deste cluster está no [diagrama de componentes](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/blob/main/docs/arquitetura/componentes.md); a decisão de HPA por CPU, na [ADR-005](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/blob/main/docs/arquitetura/adrs/adr-005-hpa-por-cpu.md).
 - Deploy ativo: o cluster roda em conta AWS Academy e fica disponível sob demanda (lab ligado)
 
 ## Grupo Integradores
