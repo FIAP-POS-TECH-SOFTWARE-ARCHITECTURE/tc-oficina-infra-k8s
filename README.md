@@ -2,7 +2,7 @@
 
 Infraestrutura como código do cluster Kubernetes que hospeda o sistema da oficina mecânica — Tech Challenge FIAP SOAT, Fase 3, grupo **Integradores**.
 
-## Propósito
+## Propósito ✱
 
 Este repositório provisiona, com um único `terraform apply`, toda a base de computação da solução: a VPC e suas subnets, o cluster **EKS** com node group escalável, o repositório **ECR** onde a imagem da API é publicada, os namespaces `homolog` e `prod` que separam os dois ambientes e os addons que o cluster precisa para nascer utilizável (**metrics-server**, requisito do HPA, e o **bundle New Relic**, que alimenta os dashboards de observabilidade).
 
@@ -10,7 +10,7 @@ Este repositório provisiona, com um único `terraform apply`, toda a base de co
 
 A separação em um repositório próprio atende à exigência do enunciado de manter o cluster gerenciado por IaC em repositório dedicado, com CI e CD independentes do ciclo de vida da aplicação: o cluster muda raramente, a aplicação muda a cada PR.
 
-## Tecnologias
+## Tecnologias ✱
 
 | Item | Versão |
 | --- | --- |
@@ -23,7 +23,7 @@ A separação em um repositório próprio atende à exigência do enunciado de m
 | Chart `nri-bundle` (New Relic) | flutuante (recomendação da New Relic) |
 | CI/CD | GitHub Actions |
 
-## Arquitetura deste repositório
+## Arquitetura deste repositório ✱
 
 ```mermaid
 graph TD
@@ -96,7 +96,7 @@ data "terraform_remote_state" "k8s" {
 }
 ```
 
-## Como executar localmente
+## Como executar localmente ✱
 
 Pré-requisitos:
 
@@ -137,7 +137,7 @@ terraform apply
 
 Applies seguintes (cluster já no state) funcionam em uma etapa só.
 
-## Deploy
+## Deploy ✱
 
 | Gatilho | Workflow | O que faz |
 | --- | --- | --- |
@@ -170,15 +170,16 @@ Deploy manual de contingência: rodar `terraform init && terraform apply` localm
 | Estado remoto em S3 com `use_lockfile` | sem tabela DynamoDB (locking nativo do S3, exige Terraform ≥ 1.10) | S3 + locking nativo é hoje a recomendação da HashiCorp |
 | Chart `nri-bundle` sem versão fixa | recomendação da New Relic para o bundle | pinar versão e promover por ambiente |
 
-## Links
+## Links ✱
 
 - Repositórios da solução:
   - [`tc-oficina-app`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app) — aplicação NestJS
   - [`tc-oficina-lambda-auth`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-lambda-auth) — autenticação de cliente por CPF
   - [`tc-oficina-infra-k8s`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-k8s) — este repositório
   - [`tc-oficina-infra-db`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-db) — banco gerenciado
-- Documentação arquitetural: `docs/arquitetura/` no `tc-oficina-app`
-- Deploy ativo: o cluster roda em conta AWS Academy e fica disponível sob demanda (lab ligado)
+- Documentação arquitetural: [`docs/arquitetura/`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/tree/main/docs/arquitetura) no `tc-oficina-app` (componentes, sequências, RFCs, ADRs, DER). A topologia deste cluster está no [diagrama de componentes](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/blob/main/docs/arquitetura/componentes.md); a decisão de HPA por CPU, na [ADR-005](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/blob/main/docs/arquitetura/adrs/adr-005-hpa-por-cpu.md).
+- Deploy ativo: o cluster roda em conta AWS Academy e fica disponível sob demanda (lab ligado); `terraform output configure_kubectl` dá o comando de `update-kubeconfig`
+- Swagger / Collection: não se aplica (repositório de infraestrutura). O Swagger da API fica no `tc-oficina-app` (`http://localhost:3000/docs`); as collections Bruno/Postman, em `tc-oficina-app/bruno/` e `tc-oficina-lambda-auth/bruno/`
 
 ## Grupo Integradores
 
