@@ -53,3 +53,39 @@ resource "aws_sqs_queue_redrive_allow_policy" "dlq" {
     sourceQueueArns   = [aws_sqs_queue.fila[each.key].arn]
   })
 }
+
+# Só o tópico de eventos do mesmo ambiente pode publicar na fila do orquestrador.
+resource "aws_sqs_queue_policy" "os_orquestrador" {
+  for_each = toset(var.environments)
+
+  queue_url = aws_sqs_queue.fila["${each.key}-os-orquestrador-eventos"].id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "PermiteTopicoEventos"
+      Effect    = "Allow"
+      Principal = { Service = "sns.amazonaws.com" }
+      Action    = "sqs:SendMessage"
+      Resource  = aws_sqs_queue.fila["${each.key}-os-orquestrador-eventos"].arn
+      Condition = {
+        ArnEquals = { "aws:SourceArn" = aws_sns_topic.eventos[each.key].arn }
+      }
+    }]
+  })
+}
+
+# Entrega "raw": o corpo chega igual ao publicado e os MessageAttributes
+# (tipo, origem, trace) chegam como atributos SQS, não dentro de um envelope SNS.
+# O filtro descarta os eventos publicados pelo próprio OS.
+resource "aws_sns_topic_subscription" "os_orquestrador" {
+  for_each = toset(var.environments)
+
+  topic_arn            = aws_sns_topic.eventos[each.key].arn
+  protocol             = "sqs"
+  endpoint             = aws_sqs_queue.fila["${each.key}-os-orquestrador-eventos"].arn
+  raw_message_delivery = true
+  filter_policy_scope  = "MessageAttributes"
+  filter_policy        = jsonencode({ origem = ["billing", "execution"] })
+
+  depends_on = [aws_sqs_queue_policy.os_orquestrador]
+}
