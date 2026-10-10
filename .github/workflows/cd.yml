@@ -31,5 +31,11 @@ jobs:
             aws s3api create-bucket --bucket "$BUCKET" --region us-east-1
             aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
           fi
-      - run: terraform init
-      - run: terraform apply -auto-approve -input=false
+      - run: terraform init -input=false
+      # Etapa 1: cluster e nodes antes dos providers kubernetes/helm (necessário
+      # quando o state está vazio, ex.: conta do lab recriada). Sem mudanças
+      # quando o cluster já existe.
+      - name: Apply do cluster (etapa 1)
+        run: terraform apply -auto-approve -input=false -target=aws_eks_node_group.main
+      - name: Apply completo (etapa 2)
+        run: terraform apply -auto-approve -input=false
