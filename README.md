@@ -4,7 +4,7 @@ Infraestrutura como código do cluster Kubernetes que hospeda o sistema da ofici
 
 ## Propósito ✱
 
-Este repositório provisiona, com um único `terraform apply`, toda a base de computação da solução: a VPC e suas subnets, o cluster **EKS** com node group escalável, o repositório **ECR** onde a imagem da API é publicada, os namespaces `homolog` e `prod` que separam os dois ambientes e os addons que o cluster precisa para nascer utilizável (**metrics-server**, requisito do HPA, e o **bundle New Relic**, que alimenta os dashboards de observabilidade).
+Este repositório provisiona, com um único `terraform apply`, toda a base de computação da solução: a VPC e suas subnets, o cluster **EKS** com node group escalável, os repositórios **ECR** dos microsserviços (`oficina-os-service`, `oficina-billing-service`, `oficina-execution-service`, além do legado `oficina-api`), a **mensageria SNS/SQS** que conecta os microsserviços, os namespaces `homolog` e `prod` que separam os dois ambientes e os addons que o cluster precisa para nascer utilizável (**metrics-server**, requisito do HPA, e o **bundle New Relic**, que alimenta os dashboards de observabilidade).
 
 É o **primeiro** repositório de infraestrutura a ser aplicado. O `tc-oficina-infra-db` lê o remote state gerado aqui para descobrir em qual VPC e subnets criar o RDS, e o CD do `tc-oficina-app` faz deploy dentro dos namespaces criados aqui. Nada mais no ecossistema lê o state deste repositório diretamente — o contrato é a tabela de outputs abaixo.
 
@@ -67,6 +67,39 @@ graph LR
     APP -->|SSM: app-lb-hostname| LAMBDA["tc-oficina-lambda-auth"]
 ```
 
+## Mensageria (SNS + SQS)
+
+Criada por ambiente (`<env>` = `homolog` | `prod`) em `mensageria.tf`. Comandos vão para uma fila por serviço consumidor; eventos são publicados num tópico SNS único, e a fila do orquestrador (OS) assina esse tópico.
+
+| Recurso | Tipo | Produtor | Consumidor |
+| --- | --- | --- | --- |
+| `oficina-<env>-execucao-comandos` (+ `-dlq`) | SQS Standard | os-service | execution-service |
+| `oficina-<env>-billing-comandos` (+ `-dlq`) | SQS Standard | os-service | billing-service |
+| `oficina-<env>-eventos` | SNS Standard | os, billing, execution | assinaturas |
+| `oficina-<env>-os-orquestrador-eventos` (+ `-dlq`) | SQS, assinatura do SNS | — | os-service |
+
+| Configuração | Valor |
+| --- | --- |
+| Visibility timeout | 60 s |
+| Retenção | 4 dias (filas) / 14 dias (DLQs) |
+| Long polling | 20 s |
+| Redrive | 5 recebimentos sem sucesso → DLQ; DLQ aceita redrive só da própria fila |
+| Assinatura SNS → orquestrador | entrega raw; filtro `{"origem":["billing","execution"]}` sobre os atributos da mensagem |
+
+A fila do orquestrador só aceita mensagens do tópico do mesmo ambiente (política com `aws:SourceArn`). Os pods acessam SNS/SQS com as credenciais do node (`LabRole`, via metadados da instância).
+
+### Parâmetros SSM publicados (contrato com os microsserviços)
+
+Todos `String`, por ambiente:
+
+| Parâmetro | Conteúdo | Lido por |
+| --- | --- | --- |
+| `/oficina/<env>/mensageria/eventos-topic-arn` | ARN do tópico de eventos | CD dos 3 serviços |
+| `/oficina/<env>/mensageria/execucao-comandos-url` | URL da fila de comandos do execution | CD do os-service e do execution-service |
+| `/oficina/<env>/mensageria/billing-comandos-url` | URL da fila de comandos do billing | CD do os-service e do billing-service |
+| `/oficina/<env>/mensageria/os-orquestrador-eventos-url` | URL da fila de eventos do orquestrador | CD do os-service |
+| `/oficina/<env>/mensageria/{execucao-comandos,billing-comandos,os-orquestrador-eventos}-dlq-url` | URLs das DLQs | observabilidade e reprocessamento |
+
 ## Outputs expostos via remote state
 
 State remoto: bucket `tc-fiap-oficina-tfstate-512135631497`, key `fase-3/infra-k8s.tfstate`, região `us-east-1`.
@@ -77,7 +110,10 @@ State remoto: bucket `tc-fiap-oficina-tfstate-512135631497`, key `fase-3/infra-k
 | `public_subnet_ids` | `list(string)` | `tc-oficina-infra-db` (DB subnet group) |
 | `vpc_cidr_block` | `string` | `tc-oficina-infra-db` (regra de ingress dos pods) |
 | `cluster_name` | `string` | referência/documentação (`oficina-eks`) |
-| `ecr_repository_url` | `string` | CD do `tc-oficina-app` (push da imagem) |
+| `ecr_repository_url` | `string` | legado (`oficina-api`) |
+| `ecr_repository_urls` | `map(string)` | referência: URL do ECR de cada microsserviço |
+| `mensageria_topicos_eventos_arn` | `map(string)` | referência (o contrato oficial é o SSM) |
+| `mensageria_filas_url` | `map(string)` | referência (o contrato oficial é o SSM) |
 | `cluster_endpoint` | `string` | diagnóstico |
 | `configure_kubectl` | `string` | comando pronto de `update-kubeconfig` |
 
@@ -142,7 +178,7 @@ Applies seguintes (cluster já no state) funcionam em uma etapa só.
 | Gatilho | Workflow | O que faz |
 | --- | --- | --- |
 | PR para `main` ou `develop` | `.github/workflows/ci.yml` | `terraform fmt -check`, `init -backend=false`, `validate` e um `plan` best-effort |
-| Merge de PR em `main` | `.github/workflows/cd.yml` | `terraform init` + `terraform apply -auto-approve` |
+| Merge de PR em `main` | `.github/workflows/cd.yml` | `terraform init` + apply em duas etapas (cluster/nodes, depois o resto) — funciona também com state vazio |
 | Manual | ambos (`workflow_dispatch`) | mesma coisa, sob demanda |
 
 O `plan` do CI é best-effort de propósito: as credenciais do Learner Lab expiram em ~4h e falhariam a pipeline por um motivo que não é do código. `fmt` e `validate` permanecem obrigatórios e não dependem de AWS.
