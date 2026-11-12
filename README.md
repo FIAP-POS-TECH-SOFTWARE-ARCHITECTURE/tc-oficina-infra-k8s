@@ -51,9 +51,9 @@ graph TD
     NG --> NSP
     NG --> MS
     NG --> NR
-    ECR -.->|imagens dos serviços| NSH
-    ECR -.->|imagens dos serviços| NSP
-    MS -.->|métricas p/ HPA| NSH
+    ECR -.->|"imagens dos serviços"| NSH
+    ECR -.->|"imagens dos serviços"| NSP
+    MS -.->|"métricas p/ HPA"| NSH
     NR -.->|telemetria| NRC["New Relic One"]
 ```
 
@@ -61,10 +61,10 @@ Ordem de aplicação entre os repositórios da fase:
 
 ```mermaid
 graph LR
-    K8S["tc-oficina-infra-k8s<br/>(este repo)"] -->|remote state:<br/>vpc_id, subnets, cidr| DB["tc-oficina-infra-db"]
+    K8S["tc-oficina-infra-k8s<br/>(este repo)"] -->|"remote state:<br/>vpc_id, subnets, cidr"| DB["tc-oficina-infra-db"]
     K8S -->|namespaces + ECR| APP["tc-oficina-os-service<br/>billing, execution"]
-    DB -->|SSM: database-url, jwt-secret| APP
-    APP -->|SSM: os-service-lb-hostname<br/>(e dos demais serviços)| LAMBDA["tc-oficina-lambda-auth"]
+    DB -->|"SSM: database-url, jwt-secret<br/>execution/database-url, billing/dynamodb-table, internal-api-key"| APP
+    APP -->|"SSM: os-service-lb-hostname<br/>(e dos demais serviços)"| LAMBDA["tc-oficina-lambda-auth"]
 ```
 
 ## Mensageria (SNS + SQS)
@@ -215,9 +215,9 @@ Deploy manual de contingência: rodar `terraform init && terraform apply` localm
   - [`tc-oficina-lambda-auth`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-lambda-auth) — autenticação de cliente por CPF
   - [`tc-oficina-infra-k8s`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-k8s) — este repositório
   - [`tc-oficina-infra-db`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-db) — banco gerenciado
-- Documentação arquitetural: [`docs/arquitetura/`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/tree/main/docs/arquitetura) no `tc-oficina-os-service` (componentes, sequências, RFCs, ADRs, DER). A topologia deste cluster está no [diagrama de componentes](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/blob/main/docs/arquitetura/componentes.md); a decisão de HPA por CPU, na [ADR-005](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/blob/main/docs/arquitetura/adrs/adr-005-hpa-por-cpu.md).
+- Documentação arquitetural: [`docs/arquitetura/`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/tree/main/docs/arquitetura) no `tc-oficina-os-service` (componentes, sequências, RFCs, ADRs, DER). A topologia deste cluster está na [visão geral dos microsserviços](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/blob/main/docs/arquitetura/visao-geral-microsservicos.md); a decisão de HPA por CPU, na [ADR-005](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/blob/main/docs/arquitetura/adrs/adr-005-hpa-por-cpu.md).
 - Deploy ativo: o cluster roda em conta AWS Academy e fica disponível sob demanda (lab ligado); `terraform output configure_kubectl` dá o comando de `update-kubeconfig`
-- Swagger / Collection: não se aplica (repositório de infraestrutura). O Swagger da API fica no `tc-oficina-os-service` (`http://localhost:3000/docs`); as collections Bruno/Postman, em `tc-oficina-os-service/bruno/` e `tc-oficina-lambda-auth/bruno/`
+- Swagger / Collection: não se aplica (repositório de infraestrutura). O Swagger da API fica no `tc-oficina-os-service` (`http://localhost:3000/docs`); billing e execution expõem `/billing/docs` e `/execucao/docs`; as collections Bruno/Postman, em `tc-oficina-os-service/bruno/` e `tc-oficina-lambda-auth/bruno/`
 
 ## Grupo Integradores
 
