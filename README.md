@@ -1,12 +1,12 @@
 # tc-oficina-infra-k8s
 
-Infraestrutura como código do cluster Kubernetes que hospeda o sistema da oficina mecânica — Tech Challenge FIAP SOAT, Fase 3, grupo **Integradores**.
+Infraestrutura como código do cluster Kubernetes que hospeda o sistema da oficina mecânica — Tech Challenge FIAP SOAT, Fase 4, grupo **Integradores**.
 
 ## Propósito ✱
 
 Este repositório provisiona, com um único `terraform apply`, toda a base de computação da solução: a VPC e suas subnets, o cluster **EKS** com node group escalável, os repositórios **ECR** dos microsserviços (`oficina-os-service`, `oficina-billing-service`, `oficina-execution-service`, além do legado `oficina-api`), a **mensageria SNS/SQS** que conecta os microsserviços, os namespaces `homolog` e `prod` que separam os dois ambientes e os addons que o cluster precisa para nascer utilizável (**metrics-server**, requisito do HPA, e o **bundle New Relic**, que alimenta os dashboards de observabilidade).
 
-É o **primeiro** repositório de infraestrutura a ser aplicado. O `tc-oficina-infra-db` lê o remote state gerado aqui para descobrir em qual VPC e subnets criar o RDS, e o CD do `tc-oficina-app` faz deploy dentro dos namespaces criados aqui. Nada mais no ecossistema lê o state deste repositório diretamente — o contrato é a tabela de outputs abaixo.
+É o **primeiro** repositório de infraestrutura a ser aplicado. O `tc-oficina-infra-db` lê o remote state gerado aqui para descobrir em qual VPC e subnets criar o RDS, e os CDs dos serviços fazem deploy dentro dos namespaces criados aqui. Nada mais no ecossistema lê o state deste repositório diretamente — o contrato é a tabela de outputs abaixo.
 
 A separação em um repositório próprio atende à exigência do enunciado de manter o cluster gerenciado por IaC em repositório dedicado, com CI e CD independentes do ciclo de vida da aplicação: o cluster muda raramente, a aplicação muda a cada PR.
 
@@ -28,7 +28,7 @@ A separação em um repositório próprio atende à exigência do enunciado de m
 ```mermaid
 graph TD
     subgraph AWS["AWS us-east-1"]
-        ECR["ECR<br/>oficina-api"]
+        ECR["ECR<br/>os, billing, execution<br/>(+ oficina-api legado)"]
         subgraph VPC["VPC 10.0.0.0/16"]
             IGW["Internet Gateway"]
             SN0["Subnet pública AZ-a<br/>10.0.0.0/24"]
@@ -51,8 +51,8 @@ graph TD
     NG --> NSP
     NG --> MS
     NG --> NR
-    ECR -.->|imagem da API| NSH
-    ECR -.->|imagem da API| NSP
+    ECR -.->|imagens dos serviços| NSH
+    ECR -.->|imagens dos serviços| NSP
     MS -.->|métricas p/ HPA| NSH
     NR -.->|telemetria| NRC["New Relic One"]
 ```
@@ -62,9 +62,9 @@ Ordem de aplicação entre os repositórios da fase:
 ```mermaid
 graph LR
     K8S["tc-oficina-infra-k8s<br/>(este repo)"] -->|remote state:<br/>vpc_id, subnets, cidr| DB["tc-oficina-infra-db"]
-    K8S -->|namespaces + ECR| APP["tc-oficina-app"]
+    K8S -->|namespaces + ECR| APP["tc-oficina-os-service<br/>billing, execution"]
     DB -->|SSM: database-url, jwt-secret| APP
-    APP -->|SSM: app-lb-hostname| LAMBDA["tc-oficina-lambda-auth"]
+    APP -->|SSM: os-service-lb-hostname<br/>(e dos demais serviços)| LAMBDA["tc-oficina-lambda-auth"]
 ```
 
 ## Mensageria (SNS + SQS)
@@ -137,7 +137,7 @@ data "terraform_remote_state" "k8s" {
 Pré-requisitos:
 
 - Terraform ≥ 1.9, AWS CLI v2 e `kubectl` instalados (o AWS CLI é usado pelos providers `kubernetes`/`helm` para obter o token do cluster via `aws eks get-token`).
-- Sessão do **AWS Academy Learner Lab ativa**, com as credenciais exportadas no ambiente. No repositório `tc-oficina-app` existe `scripts/aws-academy-refresh.ps1`, que atualiza as credenciais locais e propaga os secrets para os 4 repositórios.
+- Sessão do **AWS Academy Learner Lab ativa**, com as credenciais exportadas no ambiente. No repositório `tc-oficina-os-service` existe `scripts/aws-academy-refresh.ps1`, que atualiza as credenciais locais e propaga os secrets para os 6 repositórios de trabalho.
 - Bucket de state `tc-fiap-oficina-tfstate-512135631497` já existente (criado na Fase 2).
 
 ```bash
@@ -209,13 +209,15 @@ Deploy manual de contingência: rodar `terraform init && terraform apply` localm
 ## Links ✱
 
 - Repositórios da solução:
-  - [`tc-oficina-app`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app) — aplicação NestJS
+  - [`tc-oficina-os-service`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service) — OS, cadastros e orquestrador da Saga (NestJS)
+  - [`tc-oficina-billing-service`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-billing-service) — orçamento e pagamento
+  - [`tc-oficina-execution-service`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-execution-service) — filas de diagnóstico e reparo
   - [`tc-oficina-lambda-auth`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-lambda-auth) — autenticação de cliente por CPF
   - [`tc-oficina-infra-k8s`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-k8s) — este repositório
   - [`tc-oficina-infra-db`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-infra-db) — banco gerenciado
-- Documentação arquitetural: [`docs/arquitetura/`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/tree/main/docs/arquitetura) no `tc-oficina-app` (componentes, sequências, RFCs, ADRs, DER). A topologia deste cluster está no [diagrama de componentes](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/blob/main/docs/arquitetura/componentes.md); a decisão de HPA por CPU, na [ADR-005](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-app/blob/main/docs/arquitetura/adrs/adr-005-hpa-por-cpu.md).
+- Documentação arquitetural: [`docs/arquitetura/`](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/tree/main/docs/arquitetura) no `tc-oficina-os-service` (componentes, sequências, RFCs, ADRs, DER). A topologia deste cluster está no [diagrama de componentes](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/blob/main/docs/arquitetura/componentes.md); a decisão de HPA por CPU, na [ADR-005](https://github.com/FIAP-POS-TECH-SOFTWARE-ARCHITECTURE/tc-oficina-os-service/blob/main/docs/arquitetura/adrs/adr-005-hpa-por-cpu.md).
 - Deploy ativo: o cluster roda em conta AWS Academy e fica disponível sob demanda (lab ligado); `terraform output configure_kubectl` dá o comando de `update-kubeconfig`
-- Swagger / Collection: não se aplica (repositório de infraestrutura). O Swagger da API fica no `tc-oficina-app` (`http://localhost:3000/docs`); as collections Bruno/Postman, em `tc-oficina-app/bruno/` e `tc-oficina-lambda-auth/bruno/`
+- Swagger / Collection: não se aplica (repositório de infraestrutura). O Swagger da API fica no `tc-oficina-os-service` (`http://localhost:3000/docs`); as collections Bruno/Postman, em `tc-oficina-os-service/bruno/` e `tc-oficina-lambda-auth/bruno/`
 
 ## Grupo Integradores
 
