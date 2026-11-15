@@ -102,7 +102,7 @@ Todos `String`, por ambiente:
 
 ## Outputs expostos via remote state
 
-State remoto: bucket `tc-fiap-oficina-tfstate-512135631497`, key `fase-3/infra-k8s.tfstate`, região `us-east-1`.
+State remoto: bucket `tc-fiap-oficina-tfstate-931118247889`, key `fase-3/infra-k8s.tfstate`, região `us-east-1`.
 
 | Output | Tipo | Consumido por |
 | --- | --- | --- |
@@ -125,7 +125,7 @@ Consumo a partir de outro repositório:
 data "terraform_remote_state" "k8s" {
   backend = "s3"
   config = {
-    bucket = "tc-fiap-oficina-tfstate-512135631497"
+    bucket = "tc-fiap-oficina-tfstate-931118247889"
     key    = "fase-3/infra-k8s.tfstate"
     region = "us-east-1"
   }
@@ -138,7 +138,7 @@ Pré-requisitos:
 
 - Terraform ≥ 1.9, AWS CLI v2 e `kubectl` instalados (o AWS CLI é usado pelos providers `kubernetes`/`helm` para obter o token do cluster via `aws eks get-token`).
 - Sessão do **AWS Academy Learner Lab ativa**, com as credenciais exportadas no ambiente. No repositório `tc-oficina-os-service` existe `scripts/aws-academy-refresh.ps1`, que atualiza as credenciais locais e propaga os secrets para os 6 repositórios de trabalho.
-- Bucket de state `tc-fiap-oficina-tfstate-512135631497` já existente (criado na Fase 2).
+- Bucket de state `tc-fiap-oficina-tfstate-931118247889` já existente (criado na Fase 2).
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars   # opcional: sobrescrever defaults
