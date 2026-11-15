@@ -28,4 +28,9 @@ resource "aws_eks_node_group" "main" {
   update_config {
     max_unavailable = 1
   }
+
+  # Os nodes só entram no cluster com saída para a internet. Sem esta
+  # dependência, o apply com -target do CD (etapa 1) cria o node group antes
+  # do internet gateway e das rotas, e ele fica preso em CREATING.
+  depends_on = [aws_route_table_association.public]
 }
